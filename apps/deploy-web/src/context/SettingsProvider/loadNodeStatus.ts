@@ -4,6 +4,7 @@ import { ConstantBackoff, handleAll, retry } from "cockatiel";
 
 import type { NodeStatusApiResponse } from "@src/lib/nextjs/nodeStatus/nodeStatus.handler";
 import type { AbciInfo, NodeStatus } from "@src/types/node";
+import { withBasePath } from "@src/utils/basePath";
 
 const fetchAdapter = createFetchAdapter({
   circuitBreaker: {
@@ -83,7 +84,7 @@ export async function loadProxiedNodeStatus(network: string, externalApiHttpClie
 
   try {
     const result = await nodeStatusRetryPolicy.execute(async () => {
-      const response = await externalApiHttpClient.get<NodeStatusApiResponse>(`/api/node-status?network=${encodeURIComponent(network)}`, {
+      const response = await externalApiHttpClient.get<NodeStatusApiResponse>(withBasePath(`/api/node-status?network=${encodeURIComponent(network)}`), {
         timeout: 10_000,
         adapter: fetchAdapter
       });

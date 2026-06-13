@@ -5,6 +5,7 @@ import { useLocalStorage } from "@src/hooks/useLocalStorage";
 import { usePreviousRoute } from "@src/hooks/usePreviousRoute";
 import type { FCWithChildren } from "@src/types/component";
 import type { NodeStatus } from "@src/types/node";
+import { withBasePath } from "@src/utils/basePath";
 import { migrateLocalStorage } from "@src/utils/localStorage";
 import { useRootContainer } from "../ServicesProvider/RootContainerProvider";
 import { loadNodeStatus, loadProxiedNodeStatus } from "./loadNodeStatus";
@@ -61,7 +62,9 @@ const defaultSettings: Settings = {
 function toAbsoluteEndpoint(url: string): string {
   if (/^https?:\/\//i.test(url)) return url;
   if (typeof window === "undefined" || !url.startsWith("/")) return url;
-  return window.location.origin + url;
+  // Prefix the same-origin proxy path with basePath (no-op at root) so the chain
+  // REST/RPC clients hit /<basePath>/api/proxy/... instead of the origin root.
+  return window.location.origin + withBasePath(url);
 }
 
 export const SettingsProvider: FCWithChildren = ({ children }) => {

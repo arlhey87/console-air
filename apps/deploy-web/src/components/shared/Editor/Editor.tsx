@@ -10,6 +10,8 @@ import type * as monaco from "monaco-editor";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 
+import { withBasePath } from "@src/utils/basePath";
+
 export type IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;
 export type IMarker = monaco.editor.IMarker;
 export type monaco2 = typeof monaco;
@@ -81,7 +83,7 @@ const loadMonacoEditor = once(async (): Promise<typeof MonacoEditor> => {
             "Schema for Akash Stack Definition Language (SDL) YAML input files.\n" +
             "Check https://akash.network/docs/developers/deployment/akash-sdl/ for more info."
         },
-        uri: new URL("/sdl-schema.yaml", window.location.origin).toString()
+        uri: new URL(withBasePath("/sdl-schema.yaml"), window.location.origin).toString()
       }
     ]
   });

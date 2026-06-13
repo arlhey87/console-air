@@ -1,5 +1,6 @@
 import { browserEnvConfig } from "@src/config/browser-env.config";
 import { ApiUrlService } from "@src/services/api-url/api-url.service";
+import { withBasePath } from "@src/utils/basePath";
 import * as walletUtils from "@src/utils/walletUtils";
 import { createChildContainer } from "../container/createContainer";
 import { DeploymentStorageService } from "../deployment-storage/deployment-storage.service";
@@ -15,7 +16,7 @@ const rootContainer = createAppRootContainer({
   // time. None of those services are wired up in Console Air today, so a stale
   // mainnet value here is harmless; the network-aware path is the consoleApiHttpClient
   // interceptor below.
-  BASE_API_MAINNET_URL: "/api/proxy/mainnet",
+  BASE_API_MAINNET_URL: withBasePath("/api/proxy/mainnet"),
   BASE_PROVIDER_PROXY_URL: browserEnvConfig.NEXT_PUBLIC_PROVIDER_PROXY_URL,
   apiUrlService: () => new ApiUrlService(browserEnvConfig)
 });
@@ -25,7 +26,7 @@ export const services = createChildContainer(rootContainer, {
     services.applyAxiosInterceptors(services.createAxios(), {
       request: [
         config => {
-          config.baseURL = `/api/proxy/${services.networkStore.selectedNetworkId}`;
+          config.baseURL = withBasePath(`/api/proxy/${services.networkStore.selectedNetworkId}`);
           return config;
         }
       ]

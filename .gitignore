@@ -60,3 +60,6 @@ playwright-report
 # Claude
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Misc
+deploy/<gcp-project>-api-key.json

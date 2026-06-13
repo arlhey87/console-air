@@ -3,6 +3,7 @@ import Head from "next/head";
 import { DefaultSeo, NextSeo } from "next-seo";
 import type { NextSeoProps } from "next-seo/lib/types";
 
+import { withBasePath } from "@src/utils/basePath";
 import { domainName } from "@src/utils/urlUtils";
 
 export const PageHead: React.FunctionComponent<{ pageSeo?: NextSeoProps }> = ({ pageSeo }) => {
@@ -11,7 +12,7 @@ export const PageHead: React.FunctionComponent<{ pageSeo?: NextSeoProps }> = ({ 
       <Head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href={withBasePath("/favicon.ico")} />
       </Head>
 
       <DefaultSeo

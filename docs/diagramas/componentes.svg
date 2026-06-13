@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="c-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#666"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1200" height="900" fill="#f7f8fa"/>
+  <text x="24" y="38" font-size="24" font-weight="bold" fill="#1a1a2e">Console Air — Diagrama de Componentes</text>
+  <text x="24" y="60" font-size="13" fill="#666">Monorepo npm workspaces · app deploy-web + packages compartidos (@akashnetwork/*)</text>
+
+  <!-- ================= apps/deploy-web ================= -->
+  <rect x="24" y="80" width="760" height="788" rx="12" fill="#eef3fb" stroke="#3b82c4" stroke-width="1.5"/>
+  <text x="44" y="106" font-size="17" font-weight="bold" fill="#1f4e79">apps/deploy-web (Next.js)</text>
+
+  <!-- Capa presentacion -->
+  <rect x="44" y="120" width="720" height="120" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="60" y="142" font-size="14" font-weight="bold" fill="#222">Presentación (UI)</text>
+  <rect x="60" y="152" width="160" height="36" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="68" y="175" font-size="11.5" fill="#333">pages/ (rutas)</text>
+  <rect x="230" y="152" width="160" height="36" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="238" y="175" font-size="11.5" fill="#333">components/</text>
+  <rect x="400" y="152" width="160" height="36" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="408" y="175" font-size="11.5" fill="#333">hooks/</text>
+  <rect x="570" y="152" width="178" height="36" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="578" y="175" font-size="11.5" fill="#333">context/ (Providers)</text>
+  <rect x="60" y="196" width="220" height="34" rx="6" fill="#fff7e6" stroke="#d8a200"/>
+  <text x="68" y="218" font-size="11" fill="#7a5b00">WalletProvider (self-custody)</text>
+  <rect x="290" y="196" width="220" height="34" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="298" y="218" font-size="11" fill="#333">CustomChainProvider / Services</text>
+  <rect x="520" y="196" width="228" height="34" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="528" y="218" font-size="11" fill="#333">SdlBuilder / Settings / Theme</text>
+
+  <!-- Estado -->
+  <rect x="44" y="252" width="350" height="120" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="60" y="274" font-size="14" font-weight="bold" fill="#222">Estado</text>
+  <rect x="60" y="284" width="150" height="32" rx="6" fill="#eef7f1" stroke="#7fc4a0"/>
+  <text x="68" y="305" font-size="11" fill="#1d6b48">store/ (Jotai)</text>
+  <rect x="220" y="284" width="160" height="32" rx="6" fill="#eef7f1" stroke="#7fc4a0"/>
+  <text x="228" y="305" font-size="11" fill="#1d6b48">queries/ (TanStack)</text>
+  <text x="60" y="338" font-size="10.5" fill="#555">wallet · network · sdl · certificate · route · global</text>
+  <text x="60" y="356" font-size="10.5" fill="#555">queryKeys · QueryClient (reintento solo 5xx)</text>
+
+  <!-- Config -->
+  <rect x="414" y="252" width="350" height="120" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="430" y="274" font-size="14" font-weight="bold" fill="#222">Config &amp; chains</text>
+  <rect x="430" y="284" width="150" height="32" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="438" y="305" font-size="11" fill="#333">config/ (Zod env)</text>
+  <rect x="590" y="284" width="158" height="32" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="598" y="305" font-size="11" fill="#333">chains/ (akash…)</text>
+  <text x="430" y="338" font-size="10.5" fill="#555">env-config.schema · browser/server-env</text>
+  <text x="430" y="356" font-size="10.5" fill="#555">denom · deploy · graph · ui config</text>
+
+  <!-- Servicios + DI -->
+  <rect x="44" y="384" width="720" height="150" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="60" y="406" font-size="14" font-weight="bold" fill="#222">Servicios + Contenedor DI (services/)</text>
+  <rect x="60" y="416" width="200" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="68" y="441" font-size="11" fill="#333">app-di-container (browser/server)</text>
+  <rect x="270" y="416" width="150" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="278" y="441" font-size="11" fill="#333">container/createContainer</text>
+  <rect x="430" y="416" width="150" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="438" y="441" font-size="11" fill="#333">provider-proxy.service</text>
+  <rect x="590" y="416" width="158" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="598" y="441" font-size="11" fill="#333">analytics · user-tracker</text>
+  <rect x="60" y="466" width="200" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="68" y="491" font-size="11" fill="#333">error-handler · storage</text>
+  <rect x="270" y="466" width="150" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="278" y="491" font-size="11" fill="#333">api-url · wallet-balances</text>
+  <rect x="430" y="466" width="318" height="40" rx="6" fill="#eaf2fb" stroke="#9bbbdc"/>
+  <text x="438" y="491" font-size="11" fill="#333">deployment-storage · client-ip-forwarding · container</text>
+  <text x="60" y="524" font-size="10.5" font-style="italic" fill="#666">Singletons perezosos; detección de dependencias circulares</text>
+
+  <!-- BFF -->
+  <rect x="44" y="546" width="720" height="150" rx="8" fill="#fff7ef" stroke="#e0913a"/>
+  <text x="60" y="568" font-size="14" font-weight="bold" fill="#a35d12">Capa BFF — pages/api (server-side)</text>
+  <rect x="60" y="580" width="220" height="36" rx="6" fill="#fdeede" stroke="#e0913a"/>
+  <text x="68" y="603" font-size="11" fill="#7a4410">proxy/[network]/[...path]</text>
+  <rect x="290" y="580" width="220" height="36" rx="6" fill="#fdeede" stroke="#e0913a"/>
+  <text x="298" y="603" font-size="11" fill="#7a4410">proxy/akash-rest · akash-rpc</text>
+  <rect x="520" y="580" width="228" height="36" rx="6" fill="#fdeede" stroke="#e0913a"/>
+  <text x="528" y="603" font-size="11" fill="#7a4410">provider-proxy/[network]</text>
+  <rect x="60" y="624" width="220" height="36" rx="6" fill="#fdeede" stroke="#e0913a"/>
+  <text x="68" y="647" font-size="11" fill="#7a4410">proxy/templates</text>
+  <rect x="290" y="624" width="220" height="36" rx="6" fill="#fdeede" stroke="#e0913a"/>
+  <text x="298" y="647" font-size="11" fill="#7a4410">blockchain-config · node-status</text>
+  <rect x="520" y="624" width="228" height="36" rx="6" fill="#fdeede" stroke="#e0913a"/>
+  <text x="528" y="647" font-size="11" fill="#7a4410">healthz</text>
+  <text x="60" y="682" font-size="10.5" font-style="italic" fill="#a35d12">Reenvío same-origin a upstreams (evita CORS) · WS van directo al provider</text>
+
+  <!-- Middleware + entrada -->
+  <rect x="44" y="708" width="350" height="76" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="60" y="730" font-size="13" font-weight="bold" fill="#222">proxy.ts (middleware)</text>
+  <text x="60" y="751" font-size="10.5" fill="#555">MAINTENANCE_MODE · redirecciones</text>
+  <text x="60" y="769" font-size="10.5" fill="#555">matcher excluye _next y api/auth</text>
+
+  <rect x="414" y="708" width="350" height="76" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="430" y="730" font-size="13" font-weight="bold" fill="#222">Build / runtime</text>
+  <text x="430" y="751" font-size="10.5" fill="#555">next.config.js (standalone, transpile, esmExternals)</text>
+  <text x="430" y="769" font-size="10.5" fill="#555">Dockerfile → server.js :3001 · sin basePath</text>
+
+  <!-- ================= packages ================= -->
+  <rect x="808" y="80" width="368" height="500" rx="12" fill="#eef7f1" stroke="#2e9e6b" stroke-width="1.5"/>
+  <text x="828" y="106" font-size="17" font-weight="bold" fill="#1d6b48">packages/ (@akashnetwork/*)</text>
+
+  <rect x="828" y="122" width="328" height="58" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="844" y="143" font-size="13" font-weight="bold" fill="#222">http-sdk</text>
+  <text x="844" y="163" font-size="10.5" fill="#555">Capa HTTP (Axios) hacia APIs Akash</text>
+
+  <rect x="828" y="190" width="328" height="58" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="844" y="211" font-size="13" font-weight="bold" fill="#222">react-query-sdk · react-query-proxy</text>
+  <text x="844" y="231" font-size="10.5" fill="#555">Hooks TanStack generados (OpenAPI)</text>
+
+  <rect x="828" y="258" width="328" height="58" rx="8" fill="#fffced" stroke="#cdb84a"/>
+  <text x="844" y="279" font-size="13" font-weight="bold" fill="#222">net  (GENERADO)</text>
+  <text x="844" y="299" font-size="10.5" fill="#555">Config de red (RPC/REST/chainId) · script generate</text>
+
+  <rect x="828" y="326" width="328" height="50" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="844" y="347" font-size="13" font-weight="bold" fill="#222">network-store</text>
+  <text x="844" y="366" font-size="10.5" fill="#555">Almacenamiento del navegador</text>
+
+  <rect x="828" y="386" width="328" height="50" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="844" y="407" font-size="13" font-weight="bold" fill="#222">env-loader · logging</text>
+  <text x="844" y="426" font-size="10.5" fill="#555">Carga de env · LoggerService</text>
+
+  <rect x="828" y="446" width="328" height="50" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="844" y="467" font-size="13" font-weight="bold" fill="#222">ui</text>
+  <text x="844" y="486" font-size="10.5" fill="#555">Librería de componentes compartida</text>
+
+  <rect x="828" y="506" width="328" height="50" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="844" y="527" font-size="13" font-weight="bold" fill="#222">dev-config</text>
+  <text x="844" y="546" font-size="10.5" fill="#555">tsconfig / eslint / build compartidos</text>
+
+  <!-- ================= dependencias externas ================= -->
+  <rect x="808" y="600" width="368" height="268" rx="12" fill="#fdeef0" stroke="#c44b5c" stroke-width="1.5"/>
+  <text x="828" y="626" font-size="16" font-weight="bold" fill="#9e2436">Dependencias clave (npm)</text>
+  <rect x="828" y="640" width="328" height="44" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="844" y="667" font-size="11.5" fill="#333">@akashnetwork/chain-sdk (Cosmos SDK 53)</text>
+  <rect x="828" y="692" width="328" height="44" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="844" y="719" font-size="11.5" fill="#333">@cosmos-kit/* · @cosmjs/* (wallets, firma)</text>
+  <rect x="828" y="744" width="328" height="44" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="844" y="771" font-size="11.5" fill="#333">next · react · @tanstack/react-query · jotai</text>
+  <rect x="828" y="796" width="328" height="44" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="844" y="823" font-size="11.5" fill="#333">MUI · Tailwind · Monaco · Nivo/Recharts</text>
+
+  <!-- relaciones -->
+  <line x1="784" y1="450" x2="808" y2="150" stroke="#666" stroke-width="1.5" marker-end="url(#c-arrow)"/>
+  <text x="772" y="300" font-size="10" fill="#666" transform="rotate(-78 772 300)">usa packages</text>
+  <line x1="784" y1="470" x2="808" y2="660" stroke="#666" stroke-width="1.5" marker-end="url(#c-arrow)"/>
+
+  <text x="24" y="888" font-size="10.5" font-style="italic" fill="#888">Generado a partir del análisis del repositorio (sin modificar código fuente).</text>
+</svg>

@@ -17,7 +17,20 @@ const productionUrl = (defaultValue: string) =>
     return undefined;
   }, z.string().url().optional().default(defaultValue));
 
+// Optional subpath the app is served under (e.g. "/akash-console"). Normalizes to a
+// leading slash with no trailing slash; blank means "served at the root". The same
+// value drives next.config's basePath and the public/ asset link prefixes in the
+// document head (Next only auto-prefixes next/link, next/image and the _next chunks).
+const subpath = () =>
+  z.preprocess(value => {
+    if (typeof value !== "string") return "";
+    const trimmed = value.trim().replace(/\/+$/, "");
+    if (trimmed === "") return "";
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  }, z.string().default(""));
+
 export const browserEnvSchema = z.object({
+  NEXT_PUBLIC_BASE_PATH: subpath(),
   NEXT_PUBLIC_DEFAULT_NETWORK_ID: networkId.optional().default("mainnet"),
   NEXT_PUBLIC_APP_URL: productionUrl("http://localhost:3000"),
   NEXT_PUBLIC_API_BASE_URL: productionUrl("https://console-api.akash.network"),

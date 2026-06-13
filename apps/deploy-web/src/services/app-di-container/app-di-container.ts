@@ -17,6 +17,7 @@ import { browserEnvConfig } from "@src/config/browser-env.config";
 import { UrlReturnToStack } from "@src/hooks/useReturnTo/UrlReturnToStack";
 import { AnalyticsService } from "@src/services/analytics/analytics.service";
 import networkStore from "@src/store/networkStore";
+import { withBasePath } from "@src/utils/basePath";
 import { UrlService } from "@src/utils/urlUtils";
 import type { ApiUrlService } from "../api-url/api-url.service";
 import { createContainer } from "../container/createContainer";
@@ -52,7 +53,7 @@ export const createAppRootContainer = (config: ServicesConfig) => {
       // the OPTIONS preflight to akash-templates.pages.dev fail ("CORS Missing Allow Header"),
       // which leaves the templates dropdown empty. The server-side path keeps hitting the
       // upstream directly (no proxy hop) since CORS doesn't apply to server-side fetches.
-      const baseURL = config.runtimeEnv === "browser" ? "/api/proxy/templates" : container.publicConfig.NEXT_PUBLIC_BASE_TEMPLATES_URL;
+      const baseURL = config.runtimeEnv === "browser" ? withBasePath("/api/proxy/templates") : container.publicConfig.NEXT_PUBLIC_BASE_TEMPLATES_URL;
       const httpClient = container.createAxios({ baseURL });
       return new TemplateHttpService(httpClient);
     },
@@ -63,7 +64,8 @@ export const createAppRootContainer = (config: ServicesConfig) => {
       // HTTP requests are proxied through the Next /api/provider-proxy/{network} route
       // so the browser stays same-origin (no CORS preflight). WebSockets bypass that
       // route since Next API routes can't upgrade — they hit the upstream directly.
-      const getHttpBaseUrl = () => (config.runtimeEnv === "browser" ? `/api/provider-proxy/${network()}` : config.BASE_PROVIDER_PROXY_URL.replace("%{NETWORK}", network()));
+      const getHttpBaseUrl = () =>
+        config.runtimeEnv === "browser" ? withBasePath(`/api/provider-proxy/${network()}`) : config.BASE_PROVIDER_PROXY_URL.replace("%{NETWORK}", network());
       const getWebSocketUrl = () => config.BASE_PROVIDER_PROXY_URL.replace("%{NETWORK}", network()).replace(/^http/, "ws");
       return new ProviderProxyService(
         container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {

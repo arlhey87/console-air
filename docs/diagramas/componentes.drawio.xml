@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="comp-console-air" name="Componentes">
+    <mxGraphModel dx="1100" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Console Air — Componentes (monorepo npm workspaces)" style="text;html=1;fontSize=18;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="16" width="800" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- app -->
+        <mxCell id="app" value="apps/deploy-web (Next.js)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef3fb;strokeColor=#3b82c4;verticalAlign=top;fontStyle=1;fontSize=15;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="24" y="64" width="760" height="788" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ui" value="Presentación: pages/ · components/ · hooks/ · context/ (WalletProvider self-custody, CustomChainProvider, Services, SdlBuilder, Settings, Theme)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9bbbdc;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="44" y="104" width="720" height="116" as="geometry" />
+        </mxCell>
+        <mxCell id="state" value="Estado&#10;store/ (Jotai): wallet · network · sdl · certificate · route · global&#10;queries/ (TanStack): queryKeys · QueryClient (reintento solo 5xx)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9bbbdc;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="44" y="232" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="cfg" value="Config &amp; chains&#10;config/ (env-config.schema Zod, browser/server-env, denom, deploy, graph, ui)&#10;chains/ (akash, akash-testnet, akash-sandbox)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9bbbdc;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="414" y="232" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="svc" value="Servicios + Contenedor DI (services/)&#10;app-di-container (browser/server) · container/createContainer&#10;provider-proxy · analytics · user-tracker · error-handler · storage&#10;api-url · wallet-balances · deployment-storage · client-ip-forwarding&#10;Singletons perezosos; detección de dependencias circulares" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9bbbdc;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="44" y="364" width="720" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="bff" value="Capa BFF — pages/api (server-side)&#10;proxy/[network]/[...path] · proxy/akash-rest · proxy/akash-rpc&#10;provider-proxy/[network] · proxy/templates&#10;blockchain-config · node-status · healthz&#10;Reenvío same-origin a upstreams (evita CORS); WS van directo al provider" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ef;strokeColor=#e0913a;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="44" y="526" width="720" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="mw" value="proxy.ts (middleware)&#10;MAINTENANCE_MODE · redirecciones&#10;matcher excluye _next y api/auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9bbbdc;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="44" y="688" width="350" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="build" value="Build / runtime&#10;next.config.js (standalone, transpile, esmExternals)&#10;Dockerfile → server.js :3001 · sin basePath" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9bbbdc;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="414" y="688" width="350" height="76" as="geometry" />
+        </mxCell>
+
+        <!-- packages -->
+        <mxCell id="pkgs" value="packages/ (@akashnetwork/*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef7f1;strokeColor=#2e9e6b;verticalAlign=top;fontStyle=1;fontSize=15;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="808" y="64" width="368" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="httpsdk" value="http-sdk — Capa HTTP (Axios) hacia APIs Akash" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9fd9bd;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="106" width="328" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rqsdk" value="react-query-sdk · react-query-proxy — Hooks TanStack generados (OpenAPI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9fd9bd;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="166" width="328" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="net" value="net (GENERADO) — Config de red (RPC/REST/chainId), script generate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffced;strokeColor=#cdb84a;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="226" width="328" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="nstore" value="network-store — Almacenamiento del navegador" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9fd9bd;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="286" width="328" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="envlog" value="env-loader · logging — Carga de env · LoggerService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9fd9bd;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="342" width="328" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="uipkg" value="ui — Librería de componentes compartida" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9fd9bd;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="398" width="328" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="devcfg" value="dev-config — tsconfig / eslint / build compartidos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9fd9bd;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="454" width="328" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- deps -->
+        <mxCell id="deps" value="Dependencias clave (npm)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdeef0;strokeColor=#c44b5c;verticalAlign=top;fontStyle=1;fontSize=14;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="808" y="584" width="368" height="268" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="@akashnetwork/chain-sdk (Cosmos SDK 53)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e3a6b0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="624" width="328" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="@cosmos-kit/* · @cosmjs/* (wallets, firma)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e3a6b0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="676" width="328" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="next · react · @tanstack/react-query · jotai" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e3a6b0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="728" width="328" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" value="MUI · Tailwind · Monaco · Nivo/Recharts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e3a6b0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="828" y="780" width="328" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r1" value="usa packages" style="endArrow=block;html=1;strokeColor=#666666;fontSize=10;" edge="1" parent="1" source="app" target="pkgs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="depende de" style="endArrow=block;html=1;strokeColor=#666666;fontSize=10;" edge="1" parent="1" source="app" target="deps">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,124 @@
+# ============================================================================
+# Console Air — Deployment + Service de ejemplo para GKE (subpath /akash-console)
+# ----------------------------------------------------------------------------
+# Asume imagen compilada con basePath=/akash-console (docs/deploy/Dockerfile.subpath).
+# Sustituye <REGION>, <PROJECT> y <VERSION> por tus valores.
+# Aplicar:  kubectl apply -f docs/deploy/k8s-akash-console.example.yaml
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akash-console-air
+  labels:
+    app: akash-console-air
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: akash-console-air
+  template:
+    metadata:
+      labels:
+        app: akash-console-air
+    spec:
+      terminationGracePeriodSeconds: 31
+      containers:
+        - name: web
+          image: <REGION>-docker.pkg.dev/<PROJECT>/<repo>/akash-console-air:<VERSION>
+          imagePullPolicy: Always
+          ports:
+            - name: app-http
+              containerPort: 3001
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: MAINTENANCE_MODE
+              value: "false"
+            # Opcional: habilita wallets móviles (WalletConnect)
+            # - name: NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID
+            #   value: "<reown-project-id>"
+          # Con basePath, el índice vive en /akash-console (no en /)
+          readinessProbe:
+            httpGet:
+              path: /akash-console
+              port: app-http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: app-http
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: akash-console-air-service
+  labels:
+    app: akash-console-air-service
+spec:
+  type: ClusterIP
+  selector:
+    app: akash-console-air
+  ports:
+    - name: http
+      port: 8080
+      targetPort: app-http
+---
+# ----------------------------------------------------------------------------
+# OPCIÓN ingress-nginx (alternativa a un nginx externo). Reescribe /akash-console
+# y puentea /api, /sdl-schema.yaml, /images hacia /akash-console/... en el backend.
+# Requiere el controlador ingress-nginx instalado en el clúster.
+# ----------------------------------------------------------------------------
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: akash-console-air
+#   annotations:
+#     nginx.ingress.kubernetes.io/use-regex: "true"
+#     nginx.ingress.kubernetes.io/rewrite-target: /akash-console$1
+# spec:
+#   ingressClassName: nginx
+#   tls:
+#     - hosts: ["<host>"]
+#       secretName: <tls-secret>
+#   rules:
+#     - host: <host>
+#       http:
+#         paths:
+#           - path: /akash-console(/|$)(.*)        # /akash-console/... → /akash-console/...
+#             pathType: ImplementationSpecific
+#             backend: { service: { name: akash-console-air-service, port: { number: 8080 } } }
+#           - path: /(api/.*)                        # bridge BFF
+#             pathType: ImplementationSpecific
+#             backend: { service: { name: akash-console-air-service, port: { number: 8080 } } }
+#           - path: /(sdl-schema\.yaml)              # bridge esquema SDL
+#             pathType: ImplementationSpecific
+#             backend: { service: { name: akash-console-air-service, port: { number: 8080 } } }
+#           - path: /(images/.*)                     # bridge imágenes
+#             pathType: ImplementationSpecific
+#             backend: { service: { name: akash-console-air-service, port: { number: 8080 } } }

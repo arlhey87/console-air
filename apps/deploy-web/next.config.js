@@ -6,6 +6,13 @@ const { version } = require("./package.json");
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 
+// Optional subpath the app is served under (e.g. "/akash-console"), driven by a single
+// env var. Normalized to a leading slash without a trailing one; blank = served at root.
+// This same value also prefixes the public/ asset links in _document/PageHead and the
+// next/image loader, so the reverse proxy doesn't need to bridge root-absolute assets.
+const rawBasePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").trim().replace(/\/+$/, "");
+const basePath = rawBasePath === "" ? "" : rawBasePath.startsWith("/") ? rawBasePath : `/${rawBasePath}`;
+
 const transpilePackages = [
   "geist",
   "@akashnetwork/ui",
@@ -39,13 +46,19 @@ const transpilePackages = [
 const nextConfig = {
   reactStrictMode: false,
   productionBrowserSourceMaps: true,
+  ...(basePath ? { basePath } : {}),
   env: {
-    NEXT_PUBLIC_APP_VERSION: version
+    NEXT_PUBLIC_APP_VERSION: version,
+    // Re-export the normalized value so the client/SSR sees exactly what basePath uses.
+    NEXT_PUBLIC_BASE_PATH: basePath
   },
   compiler: {
     styledComponents: true
   },
   images: {
+    // Under a subpath the /_next/image optimizer resolves `url` without the prefix and
+    // can't find local public/ images, so serve them unoptimized (static, basePath-aware).
+    ...(basePath ? { unoptimized: true } : {}),
     remotePatterns: [
       { protocol: "https", hostname: "raw.githubusercontent.com" },
       { protocol: "https", hostname: "avatars.githubusercontent.com" }

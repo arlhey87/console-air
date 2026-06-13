@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="820" viewBox="0 0 1180 820" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <marker id="arrowAccent" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#b8860b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1180" height="820" fill="#f7f8fa"/>
+  <text x="24" y="38" font-size="24" font-weight="bold" fill="#1a1a2e">Console Air — Diagrama de Arquitectura</text>
+  <text x="24" y="60" font-size="13" fill="#666">Fork self-custody de Akash Console (AEP-84) · Next.js standalone · firma del lado del cliente</text>
+
+  <!-- ===== Cliente / Navegador ===== -->
+  <rect x="24" y="84" width="540" height="300" rx="10" fill="#eaf2fb" stroke="#3b82c4" stroke-width="1.5"/>
+  <text x="44" y="110" font-size="16" font-weight="bold" fill="#1f4e79">Navegador (cliente)</text>
+
+  <rect x="44" y="124" width="500" height="92" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="60" y="146" font-size="14" font-weight="bold" fill="#222">Aplicación React 18 (Next.js Pages Router)</text>
+  <text x="60" y="167" font-size="12" fill="#444">UI: MUI · Tailwind · Radix · Monaco (editor SDL) · Nivo/Recharts</text>
+  <text x="60" y="186" font-size="12" fill="#444">Estado cliente: Jotai (wallet, network, sdl, certificate, route)</text>
+  <text x="60" y="205" font-size="12" fill="#444">Estado servidor: TanStack Query (hooks en /queries, queryKeys)</text>
+
+  <rect x="44" y="228" width="240" height="138" rx="8" fill="#fff7e6" stroke="#d8a200"/>
+  <text x="60" y="250" font-size="13" font-weight="bold" fill="#8a6500">Wallets (self-custody)</text>
+  <text x="60" y="271" font-size="11.5" fill="#5c4500">@cosmos-kit/react</text>
+  <text x="60" y="289" font-size="11.5" fill="#5c4500">• Keplr (extensión)</text>
+  <text x="60" y="307" font-size="11.5" fill="#5c4500">• Cosmostation</text>
+  <text x="60" y="325" font-size="11.5" fill="#5c4500">• MetaMask-cosmos</text>
+  <text x="60" y="343" font-size="11.5" fill="#5c4500">• WalletConnect (móvil, opcional)</text>
+  <text x="60" y="361" font-size="10.5" font-style="italic" fill="#8a6500">Firma local — la llave nunca sale</text>
+
+  <rect x="304" y="228" width="240" height="138" rx="8" fill="#ffffff" stroke="#9bbbdc"/>
+  <text x="320" y="250" font-size="13" font-weight="bold" fill="#222">Llamadas HTTP same-origin</text>
+  <text x="320" y="272" font-size="11.5" fill="#444">Axios → siempre al propio origen</text>
+  <text x="320" y="292" font-size="11.5" fill="#444">/api/proxy/*</text>
+  <text x="320" y="310" font-size="11.5" fill="#444">/api/provider-proxy/*</text>
+  <text x="320" y="328" font-size="11.5" fill="#444">/api/node-status, /api/blockchain-config</text>
+  <text x="320" y="352" font-size="10.5" font-style="italic" fill="#666">Evita CORS en el navegador</text>
+
+  <!-- ===== Servidor Next ===== -->
+  <rect x="24" y="430" width="540" height="350" rx="10" fill="#eafaf1" stroke="#2e9e6b" stroke-width="1.5"/>
+  <text x="44" y="456" font-size="16" font-weight="bold" fill="#1d6b48">Contenedor — Servidor Next.js (standalone)</text>
+  <text x="44" y="475" font-size="11.5" fill="#3a3a3a">node server.js · puerto 3001 · usuario no-root (uid 1001) · NODE_ENV=production</text>
+
+  <rect x="44" y="488" width="500" height="58" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="60" y="510" font-size="13" font-weight="bold" fill="#222">Middleware (proxy.ts)</text>
+  <text x="60" y="530" font-size="11.5" fill="#444">Modo mantenimiento (MAINTENANCE_MODE) · redirecciones</text>
+
+  <rect x="44" y="556" width="500" height="104" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="60" y="578" font-size="13" font-weight="bold" fill="#222">Capa BFF — Rutas API (pages/api)</text>
+  <text x="60" y="599" font-size="11.5" fill="#444">Reenvía REST / RPC / provider-proxy / templates a upstreams</text>
+  <text x="60" y="618" font-size="11.5" fill="#444">El navegador habla solo con este origen; el server llama directo</text>
+  <text x="60" y="639" font-size="11" font-style="italic" fill="#2e7d52">WebSockets: NO pasan por aquí → van directo al provider-proxy</text>
+
+  <rect x="44" y="670" width="500" height="94" rx="8" fill="#ffffff" stroke="#9fd9bd"/>
+  <text x="60" y="692" font-size="13" font-weight="bold" fill="#222">Contenedor de Inyección de Dependencias (DI)</text>
+  <text x="60" y="712" font-size="11.5" fill="#444">Singletons perezosos · variantes browser / server</text>
+  <text x="60" y="731" font-size="11.5" fill="#444">Servicios: http-sdk · logging · analytics · error-handler · QueryClient</text>
+  <text x="60" y="750" font-size="11.5" fill="#444">Config por env (NEXT_PUBLIC_*) validada con Zod (env-config.schema)</text>
+
+  <!-- ===== Borde / Infra externa ===== -->
+  <rect x="616" y="84" width="540" height="180" rx="10" fill="#f3eefb" stroke="#7c5cc4" stroke-width="1.5"/>
+  <text x="636" y="110" font-size="16" font-weight="bold" fill="#5b3aa0">Borde / Infraestructura (despliegue)</text>
+  <rect x="636" y="124" width="500" height="54" rx="8" fill="#ffffff" stroke="#c3b1e6"/>
+  <text x="652" y="146" font-size="13" font-weight="bold" fill="#222">nginx (reverse proxy)</text>
+  <text x="652" y="166" font-size="11.5" fill="#444">https://<host>/akash-console  →  contenedor :3001</text>
+  <rect x="636" y="186" width="500" height="66" rx="8" fill="#ffffff" stroke="#c3b1e6"/>
+  <text x="652" y="208" font-size="13" font-weight="bold" fill="#222">GCP — GKE + Artifact Registry (GAR)</text>
+  <text x="652" y="228" font-size="11.5" fill="#444">Imagen: us-east1-docker.pkg.dev/&lt;proj&gt;/<repo>/akash-console-air</text>
+  <text x="652" y="246" font-size="11.5" fill="#444">Egress a Internet vía Cloud NAT (requerido)</text>
+
+  <!-- ===== Upstreams Akash ===== -->
+  <rect x="616" y="430" width="540" height="350" rx="10" fill="#fdeef0" stroke="#c44b5c" stroke-width="1.5"/>
+  <text x="636" y="456" font-size="16" font-weight="bold" fill="#9e2436">Red Akash + servicios upstream</text>
+  <text x="636" y="475" font-size="11.5" fill="#3a3a3a">Por defecto: infraestructura pública hosteada de Akash (configurable por env)</text>
+
+  <rect x="636" y="488" width="240" height="84" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="652" y="510" font-size="12.5" font-weight="bold" fill="#222">Console API</text>
+  <text x="652" y="530" font-size="11" fill="#444">console-api.akash.network</text>
+  <text x="652" y="548" font-size="11" fill="#444">market-data, providers,</text>
+  <text x="652" y="564" font-size="11" fill="#444">usage, templates, settings</text>
+
+  <rect x="896" y="488" width="240" height="84" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="912" y="510" font-size="12.5" font-weight="bold" fill="#222">Cadena Akash (Cosmos)</text>
+  <text x="912" y="530" font-size="11" fill="#444">REST (api-mainnet)</text>
+  <text x="912" y="548" font-size="11" fill="#444">RPC (akash-rpc) — broadcast</text>
+  <text x="912" y="564" font-size="11" fill="#444">SDK 53 · chain-sdk</text>
+
+  <rect x="636" y="584" width="240" height="80" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="652" y="606" font-size="12.5" font-weight="bold" fill="#222">Provider Proxy</text>
+  <text x="652" y="626" font-size="11" fill="#444">console.akash.network/</text>
+  <text x="652" y="642" font-size="11" fill="#444">provider-proxy-{network}</text>
+  <text x="652" y="658" font-size="11" fill="#444">estado/logs/shell (HTTP + WS)</text>
+
+  <rect x="896" y="584" width="240" height="80" rx="8" fill="#ffffff" stroke="#e3a6b0"/>
+  <text x="912" y="606" font-size="12.5" font-weight="bold" fill="#222">Otros</text>
+  <text x="912" y="626" font-size="11" fill="#444">stats.akash.network</text>
+  <text x="912" y="642" font-size="11" fill="#444">akash-templates.pages.dev</text>
+  <text x="912" y="658" font-size="11" fill="#444">Proveedores Akash</text>
+
+  <rect x="636" y="676" width="500" height="88" rx="8" fill="#fff7e6" stroke="#d8a200"/>
+  <text x="652" y="698" font-size="12.5" font-weight="bold" fill="#8a6500">Firma de transacciones (self-custody)</text>
+  <text x="652" y="719" font-size="11.5" fill="#5c4500">La wallet del usuario firma localmente y la tx firmada se difunde al RPC</text>
+  <text x="652" y="738" font-size="11.5" fill="#5c4500">vía /api/proxy/akash-rpc/{network}. El servidor NUNCA ve la llave privada.</text>
+  <text x="652" y="757" font-size="10.5" font-style="italic" fill="#8a6500">MsgCreateDeployment, MsgCreateLease, grants, certificados…</text>
+
+  <!-- ===== Flechas ===== -->
+  <!-- usuario -> nginx (entra) -->
+  <line x1="564" y1="150" x2="636" y2="150" stroke="#7c5cc4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="566" y="142" font-size="10" fill="#5b3aa0">HTTPS</text>
+
+  <!-- nginx -> servidor next -->
+  <path d="M 760 178 C 760 360, 300 360, 300 430" fill="none" stroke="#7c5cc4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="470" y="350" font-size="10" fill="#5b3aa0">proxy_pass :3001</text>
+
+  <!-- cliente http -> servidor next (BFF) -->
+  <line x1="294" y1="384" x2="294" y2="430" stroke="#2e9e6b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="300" y="410" font-size="10" fill="#1d6b48">fetch /api/*</text>
+
+  <!-- servidor next BFF -> upstreams -->
+  <path d="M 544 608 C 590 608, 600 528, 636 528" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="556" y="566" font-size="10" fill="#444">HTTP server-side</text>
+
+  <!-- wallet -> RPC (firma, directa conceptualmente) -->
+  <path d="M 284 300 C 590 300, 900 420, 980 488" fill="none" stroke="#b8860b" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowAccent)"/>
+  <text x="610" y="330" font-size="10" fill="#b8860b">tx firmada → broadcast (vía BFF akash-rpc)</text>
+
+  <!-- leyenda -->
+  <rect x="24" y="788" width="1132" height="24" rx="6" fill="#ffffff" stroke="#ddd"/>
+  <line x1="40" y1="800" x2="70" y2="800" stroke="#2e9e6b" stroke-width="2"/>
+  <text x="76" y="804" font-size="10.5" fill="#444">Tráfico same-origin / server-side</text>
+  <line x1="300" y1="800" x2="330" y2="800" stroke="#b8860b" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="336" y="804" font-size="10.5" fill="#444">Firma self-custody (cliente)</text>
+  <line x1="540" y1="800" x2="570" y2="800" stroke="#7c5cc4" stroke-width="2"/>
+  <text x="576" y="804" font-size="10.5" fill="#444">Entrada HTTPS / borde</text>
+  <text x="820" y="804" font-size="10.5" font-style="italic" fill="#888">Fuente: análisis de código y log 2026-06-13 — sin modificar fuente</text>
+</svg>

@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 
 import networkStore from "@src/store/networkStore";
+import { withBasePath } from "./basePath";
 import { appendSearchParams } from "./urlUtils";
 
 export class ApiUrlService {
@@ -133,7 +134,7 @@ export class ApiUrlService {
     // so the browser only ever talks to its own origin. The proxy forwards
     // server-side to the per-network upstream derived from NEXT_PUBLIC_API_BASE_URL
     // (mainnet → console-api.akash.network, sandbox → console-api-sandbox.akash.network).
-    return `/api/proxy/${networkStore.selectedNetworkId}`;
+    return withBasePath(`/api/proxy/${networkStore.selectedNetworkId}`);
   }
 }
 
