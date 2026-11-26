@@ -65,10 +65,10 @@
   <text x="636" y="110" font-size="16" font-weight="bold" fill="#5b3aa0">Borde / Infraestructura (despliegue)</text>
   <rect x="636" y="124" width="500" height="54" rx="8" fill="#ffffff" stroke="#c3b1e6"/>
   <text x="652" y="146" font-size="13" font-weight="bold" fill="#222">nginx (reverse proxy)</text>
-  <text x="652" y="166" font-size="11.5" fill="#444">https://<host>/akash-console  →  contenedor :3001</text>
+  <text x="652" y="166" font-size="11.5" fill="#444">https://&lt;host&gt;/akash-console  →  contenedor :3001</text>
   <rect x="636" y="186" width="500" height="66" rx="8" fill="#ffffff" stroke="#c3b1e6"/>
   <text x="652" y="208" font-size="13" font-weight="bold" fill="#222">GCP — GKE + Artifact Registry (GAR)</text>
-  <text x="652" y="228" font-size="11.5" fill="#444">Imagen: us-east1-docker.pkg.dev/&lt;proj&gt;/<repo>/akash-console-air</text>
+  <text x="652" y="228" font-size="11.5" fill="#444">Imagen: us-east1-docker.pkg.dev/&lt;proj&gt;/&lt;repo&gt;/akash-console-air</text>
   <text x="652" y="246" font-size="11.5" fill="#444">Egress a Internet vía Cloud NAT (requerido)</text>
 
   <!-- ===== Upstreams Akash ===== -->

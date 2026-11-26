@@ -25,7 +25,6 @@ If none of those apply — if you just want the fastest path from "I have a Dock
 | Documento | Contenido |
 |---|---|
 | [Resumen del proyecto](./resumen-proyecto.md) | Estructura, propósito y arquitectura de alto nivel |
-| [Diagnóstico del log 2026-06-13](./diagnostico-log-2026-06-13.md) | Análisis del log `docs/logs/console-air.2026.06.13.log` |
 | [Despliegue en GCP/Docker tras nginx](./despliegue-gcp-docker-nginx.md) | Servir bajo `/akash-console` en GKE detrás de nginx |
 | [Diagramas](./diagramas/) | Arquitectura y componentes (SVG + draw.io) |
 

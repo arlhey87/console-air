@@ -73,3 +73,6 @@ run_build_publish.*.sh
 
 # Local logs
 docs/logs/
+
+# Local-only docs (transcripts, diagnostics, environment notes)
+docs/private/
