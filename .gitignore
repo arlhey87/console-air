@@ -61,5 +61,15 @@ playwright-report
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
-# Misc
-deploy/<gcp-project>-api-key.json
+# Deploy: environment-specific values, credentials and rendered manifests stay local
+# (templates: deploy/deploy.env.example, deploy/k8s/gke.deployment.template.yaml)
+deploy/deploy.env
+deploy/*.json
+*-api-key.json
+*.sa-key.json
+deployment.yml
+deploy/k8s/deployment.yml
+run_build_publish.*.sh
+
+# Local logs
+docs/logs/

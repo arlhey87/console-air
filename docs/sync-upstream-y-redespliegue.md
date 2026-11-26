@@ -1,4 +1,4 @@
-# Sincronizar con upstream y redesplegar en GKE (teamdox)
+# Sincronizar con upstream y redesplegar en GKE
 
 > Este fork (`origin` = `arlhey87/console-air`) **no envía PRs a upstream**
 > (`akash-network/console-air`). Upstream solo se usa como fuente: se trae su `main`, se integra en
@@ -61,25 +61,32 @@ git merge --ff-only chore/sync-upstream
 git push origin main
 ```
 
-## 3. Redesplegar en GKE (proyecto `<gcp-project>`, cluster `<gke-cluster>`, `us-east1`)
+## 3. Redesplegar en GKE
 
-Requisitos: Docker vía WSL, `gcloud` autenticado, `kubectl`, `envsubst`, y la key
-`deploy/<gcp-project>-api-key.json` (gitignored) presente. Correr **desde Git Bash, en la raíz del repo,
-con `main` actualizado**:
+Los valores del entorno (proyecto GCP, Artifact Registry, cluster, key de la service account) **no
+están versionados**: viven en `deploy/deploy.env` (gitignored). La primera vez:
+
+```bash
+cp deploy/deploy.env.example deploy/deploy.env   # y completar los <placeholders>
+```
+
+Requisitos: Docker (en Windows vía WSL: `DOCKER="wsl docker"`), `gcloud` autenticado, `kubectl`,
+`envsubst` y el JSON de la service account en la ruta de `GAR_SA_KEY_FILE` (gitignored). Correr
+**desde Git Bash, en la raíz del repo, con `main` actualizado**:
 
 ```bash
 git switch main && git pull --ff-only origin main
-sh run_build_publish.sh <VERSION>      # p. ej. 1.1.1-sync.20261126
+bash deploy/publish-gar.sh <VERSION>      # p. ej. 1.1.1-sync.20261126
 ```
 
 El script:
-1. construye `deploy/Dockerfile` (por defecto `BASE_PATH=/akash-console`) como
-   `us-east1-docker.pkg.dev/<gcp-project>/<repo>/akash-console-air:<VERSION>`;
-2. hace login en GAR con la service account y `docker push`;
-3. obtiene credenciales del cluster y aplica `deploy/k8s/<gcp-project>.deployment.yaml` (vía `envsubst`
-   → `deployment.yml` en la raíz; es un archivo generado, **no commitearlo**).
+1. construye `deploy/Dockerfile` con `BASE_PATH` y lo etiqueta
+   `<GAR_LOCATION>-docker.pkg.dev/<GCLOUD_PROJECT>/<GAR_REPOSITORY>/<IMAGE>:<VERSION>`;
+2. hace login en GAR con la service account (si `GAR_SA_KEY_FILE` está definido) y `docker push`;
+3. obtiene credenciales de `GKE_CLUSTER` y aplica `deploy/k8s/gke.deployment.template.yaml` vía
+   `envsubst` directo a `kubectl apply` (no deja archivos renderizados).
 
-Usar siempre un tag nuevo: con un tag repetido el `Deployment` no cambia y no hay rollout.
+Usar siempre un tag nuevo: con un tag repetido el manifiesto no cambia y no hay rollout.
 
 ## 4. Verificar
 
@@ -107,6 +114,8 @@ kubectl rollout undo deploy/akash-console-air
 kubectl rollout status deploy/akash-console-air
 ```
 
-o redesplegar el tag anterior: `sh run_build_publish.sh <VERSION_ANTERIOR>` (la imagen
-ya está en GAR; el script la reconstruye, para solo aplicar el manifiesto usar
-`IMAGE_NAME=... REPLICAS=1 envsubst < deploy/k8s/<gcp-project>.deployment.yaml | kubectl apply -f -`).
+o volver a aplicar una imagen anterior que ya está en GAR, sin reconstruir:
+
+```bash
+IMAGE_NAME=<imagen>:<VERSION_ANTERIOR> REPLICAS=1   envsubst '${IMAGE_NAME} ${REPLICAS}' < deploy/k8s/gke.deployment.template.yaml | kubectl apply -f -
+```
