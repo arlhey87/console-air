@@ -1,0 +1,292 @@
+import type { DeploymentGroup } from "@src/types/deployment";
+import { memoryUnits } from "@src/utils/akash/units";
+import { toBase64 } from "@src/utils/encoding";
+
+/**
+ * Confidential Compute (TEE) helpers for the deployment detail view.
+ *
+ * The declared TEE type is an on-chain group placement requirement: `group_spec.requirements.attributes`
+ * carries a `tee/type` attribute (`cpu` | `cpu-gpu`) so only TEE-capable providers can bid/match. It is
+ * therefore authoritative and available for every deployment (Console, CLI or otherwise) without the
+ * stored SDL manifest. The constants below mirror the provider's attestation-sidecar resource footprint
+ * (akash-network/provider PR #396, `cluster/kube/builder`) so we can show the tenant how much of their
+ * declared per-pod budget the provider-injected sidecar reserves.
+ */
+
+export type TeeType = "cpu" | "cpu-gpu";
+
+/** On-chain group placement attribute key carrying the declared TEE type. */
+export const TEE_TYPE_ATTRIBUTE_KEY = "tee/type";
+
+/**
+ * Help link surfaced from the Confidential Compute builder section. Published by akash-network/website
+ * PR #1245 (docs: confidential compute); live once that PR merges.
+ */
+export const CONFIDENTIAL_COMPUTE_DOCS_URL = "https://akash.network/docs/learn/core-concepts/confidential-compute";
+
+/** Exact container name the provider injects (akash-network/provider, webhook/sidecar.go). */
+export const ATTESTATION_SIDECAR_SERVICE_NAME = "akash-attestation-sidecar";
+
+const MEGABYTES = 1024 * 1024;
+
+/** Sidecar resource limits the provider subtracts from the primary container (PR #396 builder constants). */
+export const SIDECAR_CPU_LIMIT_MILLICORES = 100;
+export const SIDECAR_MEMORY_LIMIT_BYTES: Record<TeeType, number> = {
+  cpu: 64 * MEGABYTES,
+  "cpu-gpu": 128 * MEGABYTES
+};
+
+/** Floors the provider applies to the primary container after subtraction. */
+export const MIN_PRIMARY_CPU_MILLICORES = 10;
+export const MIN_PRIMARY_MEMORY_BYTES = 16 * MEGABYTES;
+
+const TEE_TYPES: readonly TeeType[] = ["cpu", "cpu-gpu"];
+
+function isTeeType(value: unknown): value is TeeType {
+  return typeof value === "string" && (TEE_TYPES as readonly string[]).includes(value);
+}
+
+/** Parses an on-chain integer-valued string (millicores, bytes, gpu units). Returns undefined on garbage. */
+function parseIntegerVal(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  // Require an exact integer string: parseInt accepts prefixes ("500Mi" -> 500), which would treat
+  // a malformed on-chain value as a valid count instead of skipping it.
+  if (typeof value !== "string" || !/^-?\d+$/.test(value)) return undefined;
+  return parseInt(value, 10);
+}
+
+/** Returns the TEE type declared on a group's on-chain placement requirements, or undefined when none/unknown. */
+export function getGroupTeeType(group: DeploymentGroup | undefined | null): TeeType | undefined {
+  const attributes = group?.group_spec?.requirements?.attributes;
+  if (!Array.isArray(attributes)) return undefined;
+  const value = attributes.find(attribute => attribute?.key === TEE_TYPE_ATTRIBUTE_KEY)?.value;
+  return isTeeType(value) ? value : undefined;
+}
+
+/**
+ * Returns the distinct set of TEE types declared across all of a deployment's groups, in canonical order.
+ * Never throws — a missing or malformed group list yields an empty array so the deployment view stays intact.
+ */
+export function getDeclaredTeeTypes(groups: DeploymentGroup[] | undefined | null): TeeType[] {
+  const declared = new Set<TeeType>();
+
+  if (Array.isArray(groups)) {
+    for (const group of groups) {
+      const teeType = getGroupTeeType(group);
+      if (teeType) declared.add(teeType);
+    }
+  }
+
+  return TEE_TYPES.filter(type => declared.has(type));
+}
+
+/**
+ * Replicates the provider's resource split: the sidecar's fixed limits are reserved, and the
+ * primary container keeps the remainder floored at the provider minimums. The lease's declared
+ * (billed) resources are unchanged — this only describes how a single pod's budget is divided.
+ */
+export function computeSidecarCarveout(input: { cpuMillicores: number; memoryBytes: number; teeType: TeeType }): {
+  reserved: { cpu: number; memory: number };
+  container: { cpu: number; memory: number };
+} {
+  const reservedCpu = SIDECAR_CPU_LIMIT_MILLICORES;
+  const reservedMemory = SIDECAR_MEMORY_LIMIT_BYTES[input.teeType];
+
+  return {
+    reserved: { cpu: reservedCpu, memory: reservedMemory },
+    container: {
+      cpu: Math.max(input.cpuMillicores - reservedCpu, MIN_PRIMARY_CPU_MILLICORES),
+      memory: Math.max(input.memoryBytes - reservedMemory, MIN_PRIMARY_MEMORY_BYTES)
+    }
+  };
+}
+
+export interface TeeResourceCarveout {
+  /** On-chain resource unit id, used as a stable React key. */
+  id: string;
+  teeType: TeeType;
+  /** Number of pods (replicas) using this resource unit; each pod gets its own attestation sidecar. */
+  count: number;
+  /** GPU units per pod, used to disambiguate units when a lease declares more than one. */
+  gpuUnits: number;
+  /** Per-pod declared (billed) resources. */
+  requested: { cpu: number; memory: number };
+  /** Per-pod resources reserved by the attestation sidecar. */
+  reserved: { cpu: number; memory: number };
+  /** Per-pod resources left to the primary container after the sidecar reservation. */
+  container: { cpu: number; memory: number };
+}
+
+/**
+ * Builds the per-pod resource carve-out for every resource unit in a TEE group. The `tee/type` attribute
+ * is a group-level placement requirement, so the provider injects the attestation sidecar into every pod
+ * of the group — each resource unit (and each of its `count` replicas) reserves the same sidecar footprint.
+ * Returns an empty array when the group declares no TEE type. Resource units whose on-chain cpu/memory
+ * cannot be parsed are skipped; never throws on malformed input.
+ */
+export function getTeeResourceCarveouts(group: DeploymentGroup | undefined | null): TeeResourceCarveout[] {
+  const teeType = getGroupTeeType(group);
+  const resources = group?.group_spec?.resources;
+  if (!teeType || !Array.isArray(resources)) return [];
+
+  const carveouts: TeeResourceCarveout[] = [];
+
+  resources.forEach((entry, index) => {
+    const cpuMillicores = parseIntegerVal(entry?.resource?.cpu?.units?.val);
+    const memoryBytes = parseIntegerVal(entry?.resource?.memory?.quantity?.val);
+    if (cpuMillicores === undefined || memoryBytes === undefined) return;
+
+    const { reserved, container } = computeSidecarCarveout({ cpuMillicores, memoryBytes, teeType });
+    carveouts.push({
+      id: String(entry?.resource?.id ?? index),
+      teeType,
+      count: entry?.count ?? 1,
+      gpuUnits: parseIntegerVal(entry?.resource?.gpu?.units?.val) ?? 0,
+      requested: { cpu: cpuMillicores, memory: memoryBytes },
+      reserved,
+      container
+    });
+  });
+
+  return carveouts;
+}
+
+/** Bytes-per-unit for the builder's memory unit suffixes (Mi/Gi/MB/GB). Unknown suffixes fall back to Mi. */
+const MEMORY_UNIT_BYTES: Record<string, number> = memoryUnits.reduce<Record<string, number>>((acc, unit) => {
+  acc[unit.suffix] = unit.value;
+  return acc;
+}, {});
+
+function memoryUnitBytes(unit: string): number {
+  return MEMORY_UNIT_BYTES[unit] ?? MEGABYTES;
+}
+
+/**
+ * Builds a single per-pod resource carve-out from the deployment builder's form state, so the builder can
+ * preview the attestation-sidecar reservation before a lease exists. CPU is declared in whole cores and
+ * memory as a value + unit suffix, so both are converted to the millicores/bytes that `computeSidecarCarveout`
+ * expects. Mirrors `getTeeResourceCarveouts` for the on-chain path.
+ */
+export function buildFormTeeCarveout(input: {
+  id: string;
+  cpu: number;
+  ram: number;
+  ramUnit: string;
+  count: number;
+  gpu?: number;
+  teeType: TeeType;
+}): TeeResourceCarveout {
+  const cpuMillicores = Math.round(input.cpu * 1000);
+  const memoryBytes = Math.round(input.ram * memoryUnitBytes(input.ramUnit));
+  const { reserved, container } = computeSidecarCarveout({ cpuMillicores, memoryBytes, teeType: input.teeType });
+
+  return {
+    id: input.id,
+    teeType: input.teeType,
+    count: input.count,
+    gpuUnits: input.gpu ?? 0,
+    requested: { cpu: cpuMillicores, memory: memoryBytes },
+    reserved,
+    container
+  };
+}
+
+interface LeaseStatusLike {
+  services: Record<string, unknown>;
+  forwarded_ports?: Record<string, unknown>;
+  ips?: Record<string, unknown> | null;
+}
+
+/**
+ * Strips the attestation sidecar from a lease status. Defensive: under the current provider design
+ * the sidecar is a pod container and never appears as a lease-status service, so this is a passthrough
+ * (returns the same reference) today. It guards against a future provider reporting it as a service.
+ */
+export function omitAttestationSidecar<T extends LeaseStatusLike>(leaseStatus: T): T {
+  if (!leaseStatus) return leaseStatus;
+
+  // Strip by key presence (not truthiness) so a sidecar entry with a falsy value is still removed.
+  // Returns the same record reference when the key is absent, which lets an untouched status pass
+  // through unchanged below (referentially stable for React Query consumers).
+  const omit = <V>(record: Record<string, V> | null | undefined): Record<string, V> | null | undefined => {
+    if (!record || !(ATTESTATION_SIDECAR_SERVICE_NAME in record)) return record;
+    const { [ATTESTATION_SIDECAR_SERVICE_NAME]: _omitted, ...rest } = record;
+    return rest;
+  };
+
+  const services = omit(leaseStatus.services);
+  const forwardedPorts = omit(leaseStatus.forwarded_ports);
+  const ips = omit(leaseStatus.ips);
+
+  if (services === leaseStatus.services && forwardedPorts === leaseStatus.forwarded_ports && ips === leaseStatus.ips) {
+    return leaseStatus;
+  }
+
+  return {
+    ...leaseStatus,
+    services: services as T["services"],
+    forwarded_ports: forwardedPorts,
+    ips
+  };
+}
+
+/** Human-readable label for a TEE type (bare "cpu" reads oddly as a TEE indicator). */
+export function formatTeeTypeLabel(teeType: TeeType): string {
+  return teeType === "cpu-gpu" ? "CPU + GPU" : "CPU";
+}
+
+/**
+ * Attestation evidence (AEP-83 §5). The provider gateway forwards the tenant nonce to the attestation
+ * sidecar and returns the hardware-signed evidence unchanged: a CPU report and platform for every quote,
+ * plus one report per GPU on GPU-backed platforms.
+ */
+export type TeePlatform = "snp" | "tdx" | "snp-gpu" | "tdx-gpu";
+
+export interface GpuAttestationReport {
+  /**
+   * Device index of the GPU this report attests, used to disambiguate multiple GPUs. The provider gateway
+   * forwards the sidecar payload verbatim, whose wire field is `device_index` (AEP-83 §5 / chain-sdk
+   * `AttestationGPUReport`) — so this must match that key, not a renamed `index`.
+   */
+  device_index: number;
+  /** Hardware-signed GPU attestation report, base64. On GPU platforms this embeds the device cert chain. */
+  report: string;
+}
+
+export interface AttestationQuote {
+  /** CPU attestation report (one per quote), base64. */
+  report: string;
+  tee_platform: TeePlatform;
+  /**
+   * Vendor certificate chain for the CPU report, base64. May be empty when the platform expects the verifier
+   * to fetch it out-of-band (e.g. the AMD VCEK chain from AMD KDS). Carried through for independent verification.
+   */
+  cert_chain?: string;
+  /** Platform auxiliary blob (e.g. TDX quote collateral), base64. May be empty. Carried through for verification. */
+  auxblob?: string;
+  /** Per-GPU attestation reports; absent/empty for CPU-only platforms. */
+  gpu_reports?: GpuAttestationReport[];
+}
+
+/**
+ * The attestation evidence as fetched for a single request: the per-request {@link nonce} that was sent as the
+ * freshness challenge plus the hardware-signed {@link quote} it produced. The nonce must travel with the quote so a
+ * verifier can confirm the evidence is bound to this specific request (AEP-83 §5).
+ */
+export interface AttestationEvidence {
+  nonce: string;
+  quote: AttestationQuote;
+}
+
+/** The attestation nonce must decode to exactly this many bytes (AEP-83 §5). */
+export const ATTESTATION_NONCE_BYTES = 64;
+
+/**
+ * Generates a fresh per-request attestation challenge: 64 cryptographically random bytes, base64-encoded.
+ * A new value on every call binds the returned evidence to that specific request (CON-540 acceptance criteria).
+ */
+export function generateAttestationNonce(): string {
+  const bytes = new Uint8Array(ATTESTATION_NONCE_BYTES);
+  crypto.getRandomValues(bytes);
+  return toBase64(bytes);
+}

@@ -1,0 +1,295 @@
+# PR-less release: on every push to main, compute the next version from conventional
+# commits, cut the git tag + GitHub Release directly (no release PR), then build and
+# deploy to air.akash.network. Authenticated with the default GITHUB_TOKEN — no App/bot.
+#
+# Version is computed by packages/releaser (conventional-recommended-bump). It is
+# deterministic per commit SHA and emits an empty tag for non-releasing commits
+# (chore/docs/test/style/ci/build), which short-circuits the whole pipeline.
+#
+# Required repository secrets:
+#   KUBECONFIG           — base64-encoded kubeconfig YAML; API server reachable over Tailscale
+#   TS_OAUTH_CLIENT_ID   — Tailscale OAuth client ID (tag:ci)
+#   TS_OAUTH_SECRET      — Tailscale OAuth client secret
+#
+# Required repository variable (optional):
+#   TAILSCALE_ORG        — tailnet name to verify after connecting
+#
+# Tailscale OAuth client setup (one-time):
+#   1. https://login.tailscale.com/admin/settings/oauth — create OAuth client
+#   2. Scopes: Devices Core (write) — allows CI runners to join the tailnet
+#   3. Tag: tag:ci (must exist in ACLs and allow access to the k8s API server)
+#   4. Store client ID + secret in the GitHub secrets above
+#
+# ACLs: ensure tag:ci can reach the cluster API (port 6443) on the tailnet.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/deploy-web/**"
+      - "packages/**"
+      - "package-lock.json"
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA to release (defaults to the triggering commit)"
+        required: false
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Compute version
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      git_tag: ${{ steps.bump.outputs.git_tag }}
+      version: ${{ steps.bump.outputs.version }}
+      sha: ${{ steps.bump.outputs.sha }}
+      changelog: ${{ steps.bump.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags for conventional-commit analysis
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install releaser
+        working-directory: packages/releaser
+        run: npm ci --ignore-scripts
+
+      - name: Compute next version
+        id: bump
+        env:
+          SHA: ${{ inputs.sha || github.sha }}
+          REPO_URL: https://github.com/${{ github.repository }}
+        run: |
+          # Only release commits already on main. github.sha (push) always is;
+          # a workflow_dispatch sha could point anywhere, so reject off-main input.
+          if ! git merge-base --is-ancestor "$SHA" HEAD; then
+            echo "::error::target SHA $SHA is not contained in main"
+            exit 1
+          fi
+
+          out=$(node packages/releaser/recommended-bump.js \
+            --tag-prefix="v" \
+            --path "apps/deploy-web" \
+            --repo-url "$REPO_URL" \
+            --target-sha "$SHA")
+
+          tag=""
+          version=""
+          changelog=""
+          if [ -n "$out" ]; then
+            echo "$out" | jq .
+            tag=$(echo "$out" | jq -r '.nextTag // empty')
+            version=$(echo "$out" | jq -r '.nextVersion // empty')
+            changelog=$(echo "$out" | jq -r '.changelog // empty')
+          else
+            echo "No releasable commit for $SHA — skipping release."
+          fi
+
+          {
+            echo "sha=$SHA"
+            echo "git_tag=$tag"
+            echo "version=$version"
+            echo "changelog<<RELEASER_EOF"
+            echo "$changelog"
+            echo "RELEASER_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Vitest
+    needs: version
+    if: needs.version.outputs.git_tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pin npm to match packageManager field
+        run: npm install --global npm@11.11.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run package unit tests
+        run: npm run test -w ./packages --if-present
+
+      - name: Run deploy-web unit tests
+        run: npm run test:unit -w apps/deploy-web
+
+  type-check:
+    name: TypeScript
+    needs: version
+    if: needs.version.outputs.git_tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pin npm to match packageManager field
+        run: npm install --global npm@11.11.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check deploy-web
+        run: npm run type-check -w apps/deploy-web
+
+  release:
+    name: Create release
+    needs: [version, test, type-check]
+    if: needs.version.outputs.git_tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      created: ${{ steps.create.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Create tag and GitHub Release
+        id: create
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GIT_TAG: ${{ needs.version.outputs.git_tag }}
+          SHA: ${{ needs.version.outputs.sha }}
+          CHANGELOG: ${{ needs.version.outputs.changelog }}
+        run: |
+          # Releases are immutable: if the tag already exists (a re-run), skip
+          # creation AND signal downstream to skip the rebuild/redeploy so we
+          # never overwrite the image behind a published version.
+          if gh release view "$GIT_TAG" >/dev/null 2>&1; then
+            echo "Release $GIT_TAG already exists — skipping creation."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh release create "$GIT_TAG" \
+            --target "$SHA" \
+            --title "$GIT_TAG" \
+            --notes "$CHANGELOG"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build and push image
+    needs: [version, release]
+    if: needs.version.outputs.git_tag != '' && needs.release.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/deploy-web/Dockerfile
+          push: true
+          tags: ghcr.io/akash-network/console-air:${{ needs.version.outputs.version }}
+          build-args: |
+            NEXT_PUBLIC_APP_URL=https://air.akash.network
+            NEXT_PUBLIC_APP_VERSION=${{ needs.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to production
+    needs: [version, build]
+    if: needs.version.outputs.git_tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          timeout: 5m
+          use-cache: true
+
+      - name: Verify Tailscale connection
+        env:
+          TAILSCALE_ORG: ${{ vars.TAILSCALE_ORG }}
+        run: |
+          state=$(tailscale status --json | jq -r '.BackendState')
+          if [[ "$state" != "Running" ]]; then
+            echo "::error::Tailscale backend state is $state, expected Running"
+            exit 1
+          fi
+
+          if [[ -n "$TAILSCALE_ORG" ]]; then
+            tailnet=$(tailscale status --json | jq -r '.CurrentTailnet.Name')
+            if [[ "$tailnet" != "$TAILSCALE_ORG" ]]; then
+              echo "::error::Connected to tailnet $tailnet, expected $TAILSCALE_ORG"
+              exit 1
+            fi
+          fi
+
+      - name: Roll out
+        env:
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+          IMAGE: ghcr.io/akash-network/console-air:${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p ~/.kube
+          printf '%s' "$KUBECONFIG_CONTENT" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+          if ! grep -q '^apiVersion:' ~/.kube/config; then
+            echo "::error::KUBECONFIG secret must be base64-encoded kubeconfig YAML"
+            exit 1
+          fi
+
+          kubectl -n console-air set image deployment/console-air web="$IMAGE"
+          kubectl -n console-air rollout status deployment/console-air --timeout=5m
