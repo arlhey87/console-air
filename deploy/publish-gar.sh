@@ -37,6 +37,11 @@ KUBE_CONTEXT="${KUBE_CONTEXT:-gke_${GCLOUD_PROJECT}_${GKE_LOCATION}_${GKE_CLUSTE
 export REPLICAS
 export IMAGE_NAME="${GAR_DOMAIN}/${GCLOUD_PROJECT}/${GAR_REPOSITORY}/${IMAGE}:${VERSION}"
 export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+# Git Bash (MSYS) rewrites arguments that start with "/" into Windows paths when calling a Windows
+# executable such as wsl.exe, so `--build-arg BASE_PATH=/akash-console` reached the build mangled
+# and Next rejected the redirect routes. Applied to docker only: the gcloud wrapper relies on the
+# conversion, so it must not be disabled globally.
+docker_cli() { MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' $DOCKER "$@"; }
 
 # --- gcloud: pin configuration, account and project for this process only ---------------------
 if [ -n "${GCLOUD_CONFIGURATION:-}" ]; then
@@ -86,15 +91,15 @@ fi
 
 # --- build & push -------------------------------------------------------------------------------
 echo "Building ${IMAGE_NAME} (BASE_PATH='${BASE_PATH:-}')..."
-$DOCKER build -f deploy/Dockerfile --build-arg BASE_PATH="${BASE_PATH:-}" -t "${IMAGE_NAME}" .
+docker_cli build -f deploy/Dockerfile --build-arg BASE_PATH="${BASE_PATH:-}" -t "${IMAGE_NAME}" .
 
 echo "Pushing to ${GAR_DOMAIN}..."
 if [ -n "${GAR_SA_KEY_FILE:-}" ]; then
-  $DOCKER login -u _json_key --password-stdin "https://${GAR_DOMAIN}" < "${GAR_SA_KEY_FILE}"
+  docker_cli login -u _json_key --password-stdin "https://${GAR_DOMAIN}" < "${GAR_SA_KEY_FILE}"
 fi
-$DOCKER push "${IMAGE_NAME}"
+docker_cli push "${IMAGE_NAME}"
 if [ -n "${GAR_SA_KEY_FILE:-}" ]; then
-  $DOCKER logout "${GAR_DOMAIN}"
+  docker_cli logout "${GAR_DOMAIN}"
 fi
 
 # --- roll out -----------------------------------------------------------------------------------
