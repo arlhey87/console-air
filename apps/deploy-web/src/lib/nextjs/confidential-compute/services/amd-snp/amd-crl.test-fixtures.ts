@@ -12,6 +12,8 @@ export function generateCrl(signerDir: string, revokedSerials: string[]): Buffer
   const dir = mkdtempSync(join(tmpdir(), "amd-crl-"));
   try {
     const ossl = (args: string[]) => execFileSync("openssl", args, { cwd: dir, stdio: ["ignore", "ignore", "pipe"] });
+    // OpenSSL config values treat "\" as an escape, so Windows paths must use forward slashes.
+    const cnfPath = (...segments: string[]) => join(...segments).replace(/\\/g, "/");
 
     const entries = revokedSerials.map(serial => `R\t350101000000Z\t240101000000Z\t${serial}\tunknown\t/CN=SEV-Milan\n`).join("");
     writeFileSync(join(dir, "index.txt"), entries);
@@ -22,10 +24,10 @@ export function generateCrl(signerDir: string, revokedSerials: string[]): Buffer
         "[ca]",
         "default_ca = myca",
         "[myca]",
-        `database = ${join(dir, "index.txt")}`,
-        `crlnumber = ${join(dir, "crlnumber")}`,
-        `certificate = ${join(signerDir, "ark.pem")}`,
-        `private_key = ${join(signerDir, "ark.key")}`,
+        `database = ${cnfPath(dir, "index.txt")}`,
+        `crlnumber = ${cnfPath(dir, "crlnumber")}`,
+        `certificate = ${cnfPath(signerDir, "ark.pem")}`,
+        `private_key = ${cnfPath(signerDir, "ark.key")}`,
         "default_md = sha384",
         "default_crl_days = 30",
         ""
