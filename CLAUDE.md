@@ -26,6 +26,21 @@ App-scoped scripts (run from `apps/deploy-web`, or `-w apps/deploy-web` from roo
 - `npm run type-check` — `tsc` (no emit).
 - `npm run start` — serve the production build.
 
+`dev`/`build` use `next ... --webpack` (not Turbopack); `build` first compiles
+`src/config/env-config.schema.ts` (`build-env-schemas`). The first `next dev` compile is slow
+(minutes) — wait for `Compiled /` before hitting the page.
+
+Vitest (`apps/deploy-web/vitest.config.ts`) has two projects: `unit` (jsdom, `isolate: false`,
+setup `tests/unit/setup.ts`, all `src/**/*.spec.*` except `src/lib/nextjs/**`) and `unit-node`
+(node env, only `src/lib/nextjs/**`). Pick with `--project unit-node`. Because `isolate: false`,
+module-level state leaks between spec files — reset mocks/state in `setup()`.
+
+**Windows:** `npm run test:unit` fails under `cmd.exe` (POSIX `NODE_ENV=...` prefix). Run Vitest
+from Git Bash instead: `cd apps/deploy-web && NODE_ENV=test DEPLOYMENT_ENV=staging npx vitest run
+<pattern>`. Conversely, Git Bash rewrites env values starting with `/` into Windows paths, so set
+`NEXT_PUBLIC_BASE_PATH=/...` from PowerShell (`$env:NEXT_PUBLIC_BASE_PATH='/akash-console'`), and
+run `npm ... -w apps/deploy-web` from the repo root (otherwise "No workspaces found").
+
 No env config is required to run the app: it ships with production defaults pointing at the hosted
 Akash infrastructure. To override endpoints, copy `apps/deploy-web/env/.env.sample` to
 `env/.env.local` (the `env/` dir is gitignored).
@@ -58,6 +73,17 @@ server-side code through Next API routes and middleware, so most modules must wo
 - **State**: Jotai stores in `src/store` (`walletStore`, `networkStore`, `sdlStore`,
   `certificateStore`, `routeStore`, `global-store`). Server state is TanStack Query — query hooks
   live in `src/queries` with keys centralized in `queryKeys.ts`.
+- **Subpath deployment** (`NEXT_PUBLIC_BASE_PATH`, `src/utils/basePath.ts`): the app can be served
+  under a subpath (e.g. `/akash-console`) instead of the origin root. The env var is normalized once
+  (leading slash, no trailing slash; blank = root) in both `next.config.js` and `env-config.schema.ts`,
+  and re-exported so client/SSR see the same value. Next auto-prefixes `next/link`, `next/image`, and
+  `/_next/*` chunks with `basePath`, **but not** hand-written `public/` asset URLs or the `/api/proxy/*`
+  paths the BFF builds. **Rule: any root-absolute URL you author — `<link>`/`<meta>` in
+  `_document.tsx`/`PageHead.tsx`, manifest/favicon, or a `/api/proxy/...` path in `apiUtils.ts` — must
+  go through `withBasePath()`**, or it 404s under a subpath. Under a subpath, `next/image` optimization
+  is disabled (`unoptimized: true`) since the optimizer can't resolve local `public/` images. The
+  build is `output: "standalone"`; `deploy/` (Dockerfile, k8s manifests) and `docs/` hold the
+  container/reverse-proxy setup.
 
 ### Workspace packages (`packages/`)
 
