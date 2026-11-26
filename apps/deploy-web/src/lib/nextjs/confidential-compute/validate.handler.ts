@@ -1,13 +1,17 @@
 import { LoggerService } from "@akashnetwork/logging";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { FixedWindowRateLimiter, getClientKey } from "../rateLimit/fixedWindowRateLimiter";
 import type { VerifyAttestationResponse } from "./http-schemas/attestation.schema";
 import { VerifyAttestationRequestSchema } from "./http-schemas/attestation.schema";
 import { createAttestationService } from "./create-attestation-service";
 
 export const DEPENDENCIES = {
   createAttestationService,
-  logger: new LoggerService({ name: "attestation-validate" })
+  logger: new LoggerService({ name: "attestation-validate" }),
+  // The route is unauthenticated and each call fans out to AMD/NVIDIA/Intel services; validation is a
+  // manual, on-demand action, so a small per-client budget only stops scripted abuse.
+  rateLimiter: new FixedWindowRateLimiter({ limit: 10, windowMs: 60_000 })
 };
 
 export type AttestationValidateApiResponse = VerifyAttestationResponse | { error: string; details?: unknown };
@@ -27,6 +31,13 @@ export async function attestationValidateHandler(
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const rateLimit = dependencies.rateLimiter.consume(getClientKey(req));
+  if (!rateLimit.allowed) {
+    res.setHeader("Retry-After", String(rateLimit.retryAfterSeconds));
+    res.status(429).json({ error: "Too many attestation validation requests" });
     return;
   }
 

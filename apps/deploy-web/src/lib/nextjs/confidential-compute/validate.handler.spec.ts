@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { describe, expect, it } from "vitest";
 import { mock } from "vitest-mock-extended";
 
+import type { FixedWindowRateLimiter } from "../rateLimit/fixedWindowRateLimiter";
 import type { VerifyAttestationResponse } from "./http-schemas/attestation.schema";
 import { MAX_GPU_REPORTS } from "./http-schemas/attestation.schema";
 import type { AttestationService } from "./services/attestation.service";
@@ -91,16 +92,45 @@ describe(attestationValidateHandler.name, () => {
     expect(res.status).toHaveBeenCalledWith(500);
   });
 
-  function setup(input: { method: string; body: unknown }) {
-    const req = { method: input.method, body: input.body } as unknown as NextApiRequest;
+  describe("when the client exceeds the rate limit", () => {
+    it("returns 429 with Retry-After and skips verification", async () => {
+      const { req, res, service, rateLimiter } = setup({ method: "POST", body: validBody });
+      rateLimiter.consume.mockReturnValue({ allowed: false, retryAfterSeconds: 42 });
+
+      await run(req, res, service, rateLimiter);
+
+      expect(res.setHeader).toHaveBeenCalledWith("Retry-After", "42");
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(service.verify).not.toHaveBeenCalled();
+    });
+  });
+
+  it("keys the rate limit on the client IP forwarded by the reverse proxy", async () => {
+    const { req, res, service, rateLimiter } = setup({ method: "POST", body: validBody, headers: { "x-real-ip": "203.0.113.7" } });
+    service.verify.mockResolvedValue({ overall: "valid", nonce: "bm9uY2U=", reports: [] });
+
+    await run(req, res, service, rateLimiter);
+
+    expect(rateLimiter.consume).toHaveBeenCalledWith("203.0.113.7");
+  });
+
+  function setup(input: { method: string; body: unknown; headers?: Record<string, string> }) {
+    const req = { method: input.method, body: input.body, headers: input.headers ?? {} } as unknown as NextApiRequest;
     const res = mock<NextApiResponse>();
     res.status.mockReturnValue(res);
     res.json.mockReturnValue(res);
     const service = mock<AttestationService>();
-    return { req, res, service };
+    const rateLimiter = mock<FixedWindowRateLimiter>();
+    rateLimiter.consume.mockReturnValue({ allowed: true, retryAfterSeconds: 0 });
+    return { req, res, service, rateLimiter };
   }
 
-  function run(req: NextApiRequest, res: NextApiResponse, service: AttestationService) {
-    return attestationValidateHandler(req, res, { createAttestationService: () => service, logger: mock<LoggerService>() } as typeof DEPENDENCIES);
+  function run(req: NextApiRequest, res: NextApiResponse, service: AttestationService, rateLimiter?: FixedWindowRateLimiter) {
+    const allowAll = mock<FixedWindowRateLimiter>({ consume: () => ({ allowed: true, retryAfterSeconds: 0 }) });
+    return attestationValidateHandler(req, res, {
+      createAttestationService: () => service,
+      logger: mock<LoggerService>(),
+      rateLimiter: rateLimiter ?? allowAll
+    } as typeof DEPENDENCIES);
   }
 });
