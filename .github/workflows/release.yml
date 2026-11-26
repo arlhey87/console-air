@@ -47,6 +47,8 @@ permissions:
 jobs:
   version:
     name: Compute version
+    # Fork guard: only the official repo releases/deploys; skipping this job skips all dependents.
+    if: github.repository == 'akash-network/console-air'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
