@@ -76,8 +76,14 @@ Requisitos: Docker (en Windows vía WSL: `DOCKER="wsl docker"`), `gcloud` autent
 
 ```bash
 git switch main && git pull --ff-only origin main
-bash deploy/publish-gar.sh <VERSION>      # p. ej. 1.1.1-sync.20261126
+DRY_RUN=1 bash deploy/publish-gar.sh <VERSION>   # valida gcloud, contexto y manifiesto; no despliega
+bash deploy/publish-gar.sh <VERSION>             # p. ej. 1.1.1-sync.20261126
 ```
+
+El script **no depende del contexto activo**: fija la configuración de gcloud de `GCLOUD_CONFIGURATION`
+(y `GCLOUD_ACCOUNT` si se define) solo para su proceso, aplica con `kubectl --context $KUBE_CONTEXT`
+y al salir restaura el `current-context` que tenías. Así, aunque kubectl esté apuntando a otro
+cluster (p. ej. producción), el despliegue va siempre al de `deploy/deploy.env`.
 
 El script:
 1. construye `deploy/Dockerfile` con `BASE_PATH` y lo etiqueta
