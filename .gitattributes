@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts and the env files they source must keep LF, or bash reads a trailing carriage return into
+# every command and variable (Windows checkouts with core.autocrlf=true).
+*.sh text eol=lf
+deploy/*.env text eol=lf
+deploy/*.env.example text eol=lf

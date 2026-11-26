@@ -111,4 +111,52 @@ describe(proxyRequest.name, () => {
     expect(Buffer.isBuffer(sentBody)).toBe(true);
     expect(sentBody.toString()).toBe(body.toString());
   });
+
+  describe("when the request body exceeds maxBodyBytes", () => {
+    it("returns 413 from the declared content-length without calling the upstream", async () => {
+      const fetchMock = vi.fn();
+      const { res } = makeRes();
+      const onError = vi.fn();
+      const body = Buffer.alloc(11);
+
+      await proxyRequest(makeReq({ method: "POST", headers: { "content-length": String(body.byteLength) }, body }), res, {
+        target: "https://upstream.example/",
+        fetch: fetchMock as any,
+        onError,
+        maxBodyBytes: 10
+      });
+
+      expect((res as any).statusCode).toBe(413);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("returns 413 from the bytes actually read when content-length is absent", async () => {
+      const fetchMock = vi.fn();
+      const { res } = makeRes();
+
+      await proxyRequest(makeReq({ method: "POST", headers: { "transfer-encoding": "chunked" }, body: Buffer.alloc(11) }), res, {
+        target: "https://upstream.example/",
+        fetch: fetchMock as any,
+        maxBodyBytes: 10
+      });
+
+      expect((res as any).statusCode).toBe(413);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it("forwards a body exactly at maxBodyBytes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeFetchResponse("ok"));
+    const { res } = makeRes();
+    const body = Buffer.alloc(10);
+
+    await proxyRequest(makeReq({ method: "POST", headers: { "content-length": String(body.byteLength) }, body }), res, {
+      target: "https://upstream.example/",
+      fetch: fetchMock as any,
+      maxBodyBytes: 10
+    });
+
+    expect((fetchMock.mock.calls[0][1].body as Buffer).byteLength).toBe(10);
+  });
 });

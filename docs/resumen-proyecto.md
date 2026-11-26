@@ -136,6 +136,5 @@ firma localmente y difunde vía /api/proxy/akash-rpc/{network}.
 | [`self-hosting.md`](./self-hosting.md)                                 | Ejecutar y auto-hospedar                                |
 | [`self-custody.md`](./self-custody.md)                                 | Wallets, RPC custom, certificados                       |
 | [`migrating-from-akash-console.md`](./migrating-from-akash-console.md) | Migración de datos locales                              |
-| [`diagnostico-log-2026-06-13.md`](./diagnostico-log-2026-06-13.md)     | Diagnóstico del log de ejecución                        |
 | [`despliegue-gcp-docker-nginx.md`](./despliegue-gcp-docker-nginx.md)   | Despliegue en Docker/GCP tras nginx                     |
 | [`diagramas/`](./diagramas/)                                           | Diagramas de arquitectura y componentes (SVG + draw.io) |

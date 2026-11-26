@@ -41,10 +41,10 @@
         <mxCell id="edge" value="Borde / Infraestructura (despliegue)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3eefb;strokeColor=#7c5cc4;verticalAlign=top;fontStyle=1;fontSize=14;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="616" y="64" width="540" height="180" as="geometry" />
         </mxCell>
-        <mxCell id="nginx" value="nginx (reverse proxy)&#10;https://<host>/akash-console → contenedor :3001" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c3b1e6;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="nginx" value="nginx (reverse proxy)&#10;https://&lt;host&gt;/akash-console → contenedor :3001" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c3b1e6;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="636" y="104" width="500" height="54" as="geometry" />
         </mxCell>
-        <mxCell id="gcp" value="GCP — GKE + Artifact Registry (GAR)&#10;us-east1-docker.pkg.dev/&lt;proj&gt;/<repo>/akash-console-air&#10;Egress a Internet vía Cloud NAT (requerido)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c3b1e6;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="gcp" value="GCP — GKE + Artifact Registry (GAR)&#10;us-east1-docker.pkg.dev/&lt;proj&gt;/&lt;repo&gt;/akash-console-air&#10;Egress a Internet vía Cloud NAT (requerido)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c3b1e6;align=left;spacingLeft=8;verticalAlign=top;spacingTop=6;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="636" y="166" width="500" height="66" as="geometry" />
         </mxCell>
 

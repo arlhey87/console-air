@@ -48,7 +48,9 @@ const nextConfig = {
   productionBrowserSourceMaps: true,
   ...(basePath ? { basePath } : {}),
   env: {
-    NEXT_PUBLIC_APP_VERSION: version,
+    // Releases inject the computed version at build time (see .github/workflows/release.yml).
+    // package.json's version is a local-dev fallback only — it is not bumped per release.
+    NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || version,
     // Re-export the normalized value so the client/SSR sees exactly what basePath uses.
     NEXT_PUBLIC_BASE_PATH: basePath
   },
@@ -79,6 +81,8 @@ const nextConfig = {
     pagesBufferLength: 10
   },
   experimental: {
+    // Docker builds often OOM during "Collecting page data" when worker count matches host CPUs.
+    ...(process.env.LIMIT_NEXT_CPUS ? { cpus: 1 } : {}),
     // Required: @nivo/* dist is CJS but depends on ESM-only d3-* packages.
     // Without "loose", Next 16's production build refuses the CJS→ESM imports.
     esmExternals: "loose",

@@ -26,6 +26,11 @@ export async function proxyRequest(req: NextApiRequest, res: NextApiResponse, op
   try {
     await forwardRequestStream(req, res, { ...options, signal: requestSignal });
   } catch (error) {
+    if (error instanceof PayloadTooLargeError && !res.headersSent) {
+      res.statusCode = 413;
+      res.end(JSON.stringify({ error: "Payload too large" }));
+      return;
+    }
     options.onError?.(error as Error);
     // If headers not sent yet, we can send a 502
     if (!res.headersSent) {
@@ -52,6 +57,23 @@ interface ProxyOptions {
   headers?: HeadersInit;
   fetch?: typeof globalThis.fetch;
   onError?: (error: Error) => void;
+  /**
+   * Largest request body (bytes) buffered before forwarding; larger bodies get a 413.
+   * Defaults to DEFAULT_MAX_BODY_BYTES.
+   */
+  maxBodyBytes?: number;
+}
+
+/**
+ * The body is buffered in memory (see forwardRequestStream), so it must be capped on a publicly
+ * reachable server. 2 MiB covers a base64-encoded tx at the chain's 1 MiB max_tx_bytes with headroom.
+ */
+export const DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+class PayloadTooLargeError extends Error {
+  constructor(limit: number) {
+    super(`Request body exceeds ${limit} bytes`);
+  }
 }
 
 async function forwardRequestStream(req: NextApiRequest, res: NextApiResponse, options: ProxyOptions) {
@@ -89,9 +111,17 @@ async function forwardRequestStream(req: NextApiRequest, res: NextApiResponse, o
   // routes only carry small JSON payloads, so buffering is fine in practice.
   let body: Buffer | undefined;
   if (hasBody) {
+    const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
+    if (contentLength > maxBodyBytes) throw new PayloadTooLargeError(maxBodyBytes);
+
     const chunks: Buffer[] = [];
+    let received = 0;
+    // content-length can be absent (chunked) or lie, so enforce the cap on the bytes actually read.
     for await (const chunk of req) {
-      chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : (chunk as Buffer));
+      const buffer = typeof chunk === "string" ? Buffer.from(chunk) : (chunk as Buffer);
+      received += buffer.byteLength;
+      if (received > maxBodyBytes) throw new PayloadTooLargeError(maxBodyBytes);
+      chunks.push(buffer);
     }
     body = Buffer.concat(chunks);
     headers.set("content-length", String(body.byteLength));
